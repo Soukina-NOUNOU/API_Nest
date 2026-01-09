@@ -8,12 +8,16 @@ import {
   ConflictException,
   BadRequestException,
 } from '../common/exceptions';
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class UsersService {
   private readonly SALT_ROUNDS = 10;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async create(dto: CreateUserDto) {
     if (!dto.email || !dto.password) {
@@ -102,7 +106,22 @@ export class UsersService {
     }
   }
 
-  async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+  async findByEmail(email: string): Promise<any> {
+    const cacheKey = `user:email:${email}`;
+    
+    // Try to get from cache first
+    const cachedUser = await this.cacheService.get<any>(cacheKey);
+    if (cachedUser) {
+      return cachedUser;
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    
+    // Cache the result if user exists
+    if (user) {
+      await this.cacheService.set(cacheKey, user, 300); // Cache for 5 minutes
+    }
+    
+    return user;
   }
 }

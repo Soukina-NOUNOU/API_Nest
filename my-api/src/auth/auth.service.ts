@@ -46,7 +46,12 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const ok = await bcrypt.compare(password, user.password as string);
+    // Verify user has required properties
+    if (!user.password || !user.id || !user.email) {
+      throw new UnauthorizedException('Invalid user data');
+    }
+
+    const ok = await bcrypt.compare(password, user.password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
     // Generate a JWT token

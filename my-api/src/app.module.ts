@@ -4,6 +4,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { CacheModule } from './cache/cache.module';
 import { GlobalExceptionFilter, LoggingInterceptor } from './common';
 
 @Module({
@@ -11,6 +12,7 @@ import { GlobalExceptionFilter, LoggingInterceptor } from './common';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    CacheModule,
     PrismaModule, 
     UsersModule, 
     AuthModule
