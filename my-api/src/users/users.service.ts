@@ -34,6 +34,15 @@ export class UsersService {
     return user;
   }
 
+  async findByClerkId(clerkId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true, email: true, name: true, clerkId: true, createdAt: true, updatedAt: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
   async update(id: number, dto: UpdateUserDto) {
     const data = { ...dto };
     if (dto.password) {

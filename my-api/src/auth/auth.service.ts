@@ -30,7 +30,7 @@ export class AuthService {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const ok = await bcrypt.compare(password, user.password);
+    const ok = await bcrypt.compare(password, user.password as string);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
 
     // Generate a JWT token
@@ -45,6 +45,17 @@ export class AuthService {
   }
 
   async validateUser(payload: JwtPayload) {
-    return this.usersService.findOne(payload.sub);
+    // Handle both Clerk and local users
+    if (payload.clerk_user && payload.clerkId) {
+      return this.usersService.findByClerkId(payload.clerkId);
+    } else {
+      const userId = typeof payload.sub === 'number' ? payload.sub : parseInt(payload.sub.toString(), 10);
+      return this.usersService.findOne(userId);
+    }
+  }
+
+    // Generate a JWT token
+  generateToken(payload: any) {
+    return this.jwtService.sign(payload);
   }
 }

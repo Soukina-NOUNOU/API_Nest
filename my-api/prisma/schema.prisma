@@ -13,7 +13,8 @@ model User {
   id        Int      @id @default(autoincrement())
   email     String   @unique
   name      String?
-  password  String
+  password  String?  // Optionnel car les utilisateurs Clerk n'ont pas de mot de passe local
+  clerkId   String?  @unique // ID utilisateur Clerk pour la synchronisation
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

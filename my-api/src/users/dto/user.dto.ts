@@ -10,4 +10,7 @@ export class UserDto {
   @IsString()
   name?: string;
 
+  @IsString()
+  clerkId?: string;
+
 }
