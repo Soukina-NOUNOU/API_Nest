@@ -35,8 +35,7 @@ export class UsersService {
   }
 
   async update(id: number, dto: UpdateUserDto) {
-    // Re-hash si le mot de passe est fourni
-    const data: any = { ...dto };
+    const data = { ...dto };
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
     }
@@ -61,7 +60,6 @@ export class UsersService {
     }
   }
 
-  // Utilisé par l'auth
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }
