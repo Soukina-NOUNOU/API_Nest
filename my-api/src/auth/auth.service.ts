@@ -1,8 +1,13 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtPayload } from './strategies/jwt.strategy';
+import {
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+} from '../common/exceptions';
 
 @Injectable()
 export class AuthService {
@@ -12,8 +17,15 @@ export class AuthService {
   ) {}
 
   async signup(email: string, password: string, name?: string) {
+    if (!email || !password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
     const existingUser = await this.usersService.findByEmail(email); 
-    if (existingUser) { throw new ConflictException('Un utilisateur avec cet email existe déjà'); }
+    if (existingUser) { 
+      throw new ConflictException('Un utilisateur avec cet email existe déjà'); 
+    }
+    
     const createdUser = await this.usersService.create({ email, password, name });
     
     // Generate a JWT token for the new user
@@ -27,6 +39,10 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
+    if (!email || !password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 

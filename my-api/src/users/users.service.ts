@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
+import {
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '../common/exceptions';
 
 @Injectable()
 export class UsersService {
@@ -11,12 +16,23 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateUserDto) {
-    const hashed = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
-    const user = await this.prisma.user.create({
-      data: { email: dto.email, name: dto.name, password: hashed },
-      select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
-    });
-    return user;
+    if (!dto.email || !dto.password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
+    try {
+      const hashed = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
+      const user = await this.prisma.user.create({
+        data: { email: dto.email, name: dto.name, password: hashed },
+        select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
+      });
+      return user;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Email already exists');
+      }
+      throw error;
+    }
   }
 
   async findAll() {
@@ -44,6 +60,10 @@ export class UsersService {
   }
 
   async update(id: number, dto: UpdateUserDto) {
+    if (!id || id <= 0) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
     const data = { ...dto };
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, this.SALT_ROUNDS);
@@ -55,17 +75,30 @@ export class UsersService {
         data,
         select: { id: true, email: true, name: true, createdAt: true, updatedAt: true },
       });
-    } catch {
-      throw new NotFoundException('User not found');
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      if (error.code === 'P2002') {
+        throw new ConflictException('Email already exists');
+      }
+      throw error;
     }
   }
 
   async remove(id: number) {
+    if (!id || id <= 0) {
+      throw new BadRequestException('Invalid user ID');
+    }
+
     try {
       await this.prisma.user.delete({ where: { id } });
       return { deleted: true };
-    } catch {
-      throw new NotFoundException('User not found');
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      throw error;
     }
   }
 
